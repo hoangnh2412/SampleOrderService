@@ -1,0 +1,47 @@
+@host = http://localhost:5048
+### JWT HS256: iss=OrderService aud=OrderService, key = appsettings Jwt:SigningKey; claims: sub, name, exp (future).
+@token = PASTE_JWT_HERE
+
+### Danh sách đơn (phân trang, lọc name — map vào Code lưu trữ)
+GET {{host}}/api/v1/orders?name=&page=0&size=20
+Authorization: Bearer {{token}}
+
+###
+
+### Tạo đơn (body khớp docs/openapi.yml)
+POST {{host}}/api/v1/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+IdempotentId: 
+
+{
+  "date": "2026-03-29",
+  "totalAmount": 1000000,
+  "totalDiscountAmount": 50000,
+  "totalPaymentAmount": 950000,
+  "items": [
+    {
+      "productId": "prd_001",
+      "productName": "Dịch vụ A",
+      "unitPrice": 500000,
+      "quantity": 2,
+      "amount": 1000000,
+      "discountAmount": 50000,
+      "paymentAmount": 950000
+    }
+  ]
+}
+
+###
+
+### Checkout (thay {orderId} bằng id trả về khi tạo đơn)
+POST {{host}}/api/v1/orders/00000000-0000-0000-0000-000000000000/checkout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentServiceId": "pay_svc_live_01",
+  "paymentMethod": "card"
+}
+
+###

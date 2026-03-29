@@ -1,0 +1,644 @@
+openapi: 3.0.3
+info:
+  title: OrderService API
+  description: |
+    API tích hợp OrderService — REST, envelope `code` / `message` / `errors` / `data` (xem `docs/openapi.md`).
+    Tạo đơn, checkout thanh toán, tra cứu danh sách đơn có phân trang.
+  version: 1.0.0
+
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: http://localhost:5048
+    description: Local (ví dụ)
+
+tags:
+  - name: Orders
+    description: Quản lý và tra cứu đơn hàng
+
+paths:
+  /api/v1/orders:
+    post:
+      tags: [Orders]
+      summary: Tạo đơn hàng
+      description: |
+        Tạo đơn mới (trạng thái nháp / chờ thanh toán). Không kiểm tra tồn kho (SAD).
+        Idempotent theo header `IdempotentId`.
+      operationId: createOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            examples:
+              sample:
+                value:
+                  name: Đơn hàng demo — tháng 3
+                  date: '2026-03-29'
+                  totalAmount: 1000000
+                  totalDiscountAmount: 50000
+                  totalPaymentAmount: 950000
+                  items:
+                    - productId: prd_001
+                      productName: Dịch vụ A
+                      unitPrice: 500000
+                      quantity: 2
+                      amount: 1000000
+                      discountAmount: 50000
+                      paymentAmount: 950000
+      responses:
+        '201':
+          description: Đơn đã được tạo
+          headers:
+            RequestId:
+              $ref: '#/components/headers/RequestId'
+            TraceId:
+              $ref: '#/components/headers/TraceId'
+            Location:
+              description: URI của đơn vừa tạo (tuỳ triển khai)
+              schema:
+                type: string
+                example: /api/v1/orders/3fa85f64-5717-4562-b3fc-2c963f66afa6
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags: [Orders]
+      summary: Tra cứu danh sách đơn hàng
+      description: Phân trang, lọc theo tên đơn (contains / prefix tuỳ triển khai).
+      operationId: searchOrders
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: name
+          in: query
+          description: Chuỗi lọc theo tên đơn; để trống thì áp dụng quy ước mặc định (ví dụ đơn mới nhất).
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Chỉ số trang (0-based hoặc 1-based — thống nhất trong triển khai).
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          description: Số bản ghi mỗi trang (có giới hạn tối đa phía server).
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+      responses:
+        '200':
+          description: Danh sách đơn
+          headers:
+            RequestId:
+              $ref: '#/components/headers/RequestId'
+            TraceId:
+              $ref: '#/components/headers/TraceId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/orders/{id}/checkout:
+    post:
+      tags: [Orders]
+      summary: Checkout / thanh toán đơn hàng
+      description: |
+        Checkout đơn đã tồn tại. Redirect/callback/metadata do server cấu hình.
+        Idempotent theo header `IdempotentId`.
+      operationId: checkoutOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrderIdPath'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+            examples:
+              sample:
+                value:
+                  paymentServiceId: pay_svc_live_01
+                  paymentMethod: card
+      responses:
+        '200':
+          description: Thanh toán xác nhận trong cùng request
+          headers:
+            RequestId:
+              $ref: '#/components/headers/RequestId'
+            TraceId:
+              $ref: '#/components/headers/TraceId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token của người gọi API.
+
+  parameters:
+    RequestId:
+      name: RequestId
+      in: header
+      required: false
+      description: UUID do client sinh — correlation / support.
+      schema:
+        type: string
+        format: uuid
+    IdempotentId:
+      name: IdempotentId
+      in: header
+      required: false
+      description: UUID idempotent cho thao tác (tạo đơn / checkout); retry cùng giá trị trả cùng kết quả nghiệp vụ.
+      schema:
+        type: string
+        format: uuid
+    OrderIdPath:
+      name: id
+      in: path
+      required: true
+      description: Định danh đơn hàng (UUID).
+      schema:
+        type: string
+        format: uuid
+
+  headers:
+    RequestId:
+      description: Echo `RequestId` từ request hoặc id do gateway gán.
+      schema:
+        type: string
+        format: uuid
+    TraceId:
+      description: Id trace nội bộ / distributed tracing.
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    FieldError:
+      type: object
+      required: [fieldName, message]
+      properties:
+        fieldName:
+          type: string
+          description: Tên field hoặc tham số (ví dụ `items[0].quantity`).
+        message:
+          type: string
+          description: Mô tả lỗi hoặc mã lỗi máy đọc được.
+
+    ApiErrorEnvelope:
+      type: object
+      required: [code, message, errors]
+      description: |
+        Biến thể lỗi — `code` khác "0000"; `data` thường bỏ trường hoặc null.
+      properties:
+        code:
+          type: string
+          example: '4220'
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+        data:
+          nullable: true
+          description: Không có payload khi lỗi (tuỳ triển khai có thể bỏ trường).
+
+    OrderLineItemRequest:
+      type: object
+      required:
+        - productId
+        - productName
+        - unitPrice
+        - quantity
+        - amount
+        - discountAmount
+        - paymentAmount
+      properties:
+        productId:
+          type: string
+        productName:
+          type: string
+        unitPrice:
+          type: number
+          format: double
+          minimum: 0
+        quantity:
+          type: integer
+          minimum: 1
+        amount:
+          type: number
+          format: double
+        discountAmount:
+          type: number
+          format: double
+          minimum: 0
+        paymentAmount:
+          type: number
+          format: double
+
+    CreateOrderRequest:
+      type: object
+      required:
+        - totalAmount
+        - totalDiscountAmount
+        - totalPaymentAmount
+        - items
+      properties:
+        date:
+          type: string
+          format: date
+          description: Ngày chứng từ; mặc định server có thể dùng ngày UTC hiện tại.
+        totalAmount:
+          type: number
+          format: double
+        totalDiscountAmount:
+          type: number
+          format: double
+          minimum: 0
+        totalPaymentAmount:
+          type: number
+          format: double
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderLineItemRequest'
+
+    OrderLineItemResponse:
+      allOf:
+        - $ref: '#/components/schemas/OrderLineItemRequest'
+        - type: object
+          properties:
+            lineId:
+              type: string
+              format: uuid
+              description: Id dòng do server sinh (tuỳ triển khai).
+
+    OrderData:
+      type: object
+      required:
+        - id
+        - name
+        - date
+        - status
+        - createdAt
+        - createdBy
+        - createdByName
+        - totalAmount
+        - totalDiscountAmount
+        - totalPaymentAmount
+        - items
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          description: Ví dụ Draft, Paid, …
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          description: Subject từ token.
+        createdByName:
+          type: string
+        totalAmount:
+          type: number
+          format: double
+        totalDiscountAmount:
+          type: number
+          format: double
+        totalPaymentAmount:
+          type: number
+          format: double
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLineItemResponse'
+
+    CreateOrderResponse:
+      type: object
+      required: [code, message, errors, data]
+      description: Envelope thành công — `code` = "0000", `errors` = [].
+      properties:
+        code:
+          type: string
+          enum: ['0000']
+        message:
+          type: string
+          example: Success
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+          maxItems: 0
+        data:
+          $ref: '#/components/schemas/OrderData'
+
+    CheckoutRequest:
+      type: object
+      required: [paymentServiceId]
+      properties:
+        paymentServiceId:
+          type: string
+          description: Mã kênh / cấu hình thanh toán (Payment Gateway).
+        paymentMethod:
+          type: string
+          description: Ví dụ card, bank_transfer, ewallet — bắt buộc nếu gateway yêu cầu.
+          example: card
+
+    CheckoutData:
+      type: object
+      required:
+        - orderId
+        - status
+        - paymentBy
+        - paymentByName
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          example: Paid
+        paymentTransactionId:
+          type: string
+          nullable: true
+          description: Mã giao dịch gateway khi đã có.
+        paymentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Null nếu luồng bất đồng bộ hoặc chưa xác nhận.
+        paymentBy:
+          type: string
+        paymentByName:
+          type: string
+
+    CheckoutResponse:
+      type: object
+      required: [code, message, errors, data]
+      properties:
+        code:
+          type: string
+          enum: ['0000']
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+          maxItems: 0
+        data:
+          $ref: '#/components/schemas/CheckoutData'
+
+    OrderSummary:
+      type: object
+      required:
+        - id
+        - name
+        - date
+        - status
+        - createdAt
+        - createdBy
+        - createdByName
+        - totalAmount
+        - totalDiscountAmount
+        - totalPaymentAmount
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+        createdByName:
+          type: string
+        totalAmount:
+          type: number
+          format: double
+        totalDiscountAmount:
+          type: number
+          format: double
+        totalPaymentAmount:
+          type: number
+          format: double
+
+    OrderListData:
+      type: object
+      required: [totalItems, totalPages, page, size, items]
+      properties:
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummary'
+
+    OrderListResponse:
+      type: object
+      required: [code, message, errors, data]
+      properties:
+        code:
+          type: string
+          enum: ['0000']
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+          maxItems: 0
+        data:
+          $ref: '#/components/schemas/OrderListData'
+
+  responses:
+    BadRequest:
+      description: JSON sai cấu trúc hoặc query không hợp lệ
+      headers:
+        RequestId:
+          $ref: '#/components/headers/RequestId'
+        TraceId:
+          $ref: '#/components/headers/TraceId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorEnvelope'
+          examples:
+            invalidJson:
+              value:
+                code: '4000'
+                message: Invalid request body
+                errors: []
+    Unauthorized:
+      description: Thiếu hoặc sai Bearer token
+      headers:
+        RequestId:
+          $ref: '#/components/headers/RequestId'
+        TraceId:
+          $ref: '#/components/headers/TraceId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorEnvelope'
+    Forbidden:
+      description: Không đủ quyền
+      headers:
+        RequestId:
+          $ref: '#/components/headers/RequestId'
+        TraceId:
+          $ref: '#/components/headers/TraceId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorEnvelope'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      headers:
+        RequestId:
+          $ref: '#/components/headers/RequestId'
+        TraceId:
+          $ref: '#/components/headers/TraceId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorEnvelope'
+    Conflict:
+      description: Xung đột nghiệp vụ hoặc idempotent
+      headers:
+        RequestId:
+          $ref: '#/components/headers/RequestId'
+        TraceId:
+          $ref: '#/components/headers/TraceId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorEnvelope'
+    UnprocessableEntity:
+      description: Dữ liệu hợp lệ cú pháp nhưng vi phạm nghiệp vụ / gateway từ chối
+      headers:
+        RequestId:
+          $ref: '#/components/headers/RequestId'
+        TraceId:
+          $ref: '#/components/headers/TraceId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorEnvelope'
+          examples:
+            validation:
+              value:
+                code: '4220'
+                message: Order totals do not match line items.
+                errors:
+                  - fieldName: totalPaymentAmount
+                    message: Must equal sum of line paymentAmount within tolerance.
+            paymentDeclined:
+              value:
+                code: '4221'
+                message: Payment was declined.
+                errors:
+                  - fieldName: payment
+                    message: INSUFFICIENT_FUNDS
+            sizeExceeded:
+              value:
+                code: '4001'
+                message: Invalid query parameters.
+                errors:
+                  - fieldName: size
+                    message: Must not exceed 100.
+    InternalServerError:
+      description: Lỗi máy chủ
+      headers:
+        RequestId:
+          $ref: '#/components/headers/RequestId'
+        TraceId:
+          $ref: '#/components/headers/TraceId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorEnvelope'
