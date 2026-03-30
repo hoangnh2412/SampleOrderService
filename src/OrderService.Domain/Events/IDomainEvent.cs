@@ -2,6 +2,6 @@ namespace OrderService.Domain.Events;
 
 public interface IDomainEvent
 {
-    Guid OrderId { get; }
-    DateTime OccurredAtUtc { get; }
+    Guid EntityId { get; }
+    DateTime CreatedAtUtc { get; }
 }

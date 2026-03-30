@@ -11,7 +11,7 @@ using OrderService.Infrastructure.Persistence;
 namespace OrderService.Infrastructure.Migrations
 {
     [DbContext(typeof(OrderDbContext))]
-    [Migration("20260329165450_InitDB")]
+    [Migration("20260329185527_InitDB")]
     partial class InitDB
     {
         /// <inheritdoc />
@@ -132,7 +132,7 @@ namespace OrderService.Infrastructure.Migrations
                     b.ToTable("OrderDetails", (string)null);
                 });
 
-            modelBuilder.Entity("OrderService.Domain.Entities.OrderMessage", b =>
+            modelBuilder.Entity("OrderService.Domain.Entities.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -146,7 +146,6 @@ namespace OrderService.Infrastructure.Migrations
 
                     b.Property<string>("Payload")
                         .IsRequired()
-                        .HasMaxLength(8000)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
@@ -154,9 +153,11 @@ namespace OrderService.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAtUtc");
+
                     b.HasIndex("EntityId", "Status");
 
-                    b.ToTable("OrderMessages", (string)null);
+                    b.ToTable("OutboxMessages", (string)null);
                 });
 
             modelBuilder.Entity("OrderService.Domain.Entities.PaymentHistory", b =>

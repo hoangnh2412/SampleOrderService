@@ -37,7 +37,7 @@ public sealed class CreateOrderHandler(
                 return mapper.Map<CreateOrderResultDto>(existing);
         }
 
-        var order = Order.Create(
+        var order = new Order(
             time.GetUtcNow().UtcDateTime,
             command.Date,
             command.TotalAmount,

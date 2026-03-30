@@ -56,6 +56,11 @@ public interface IOrderRepository
     Task AddPaymentHistoryAsync(PaymentHistory history, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Lấy bản ghi thanh toán gần nhất cho đơn (<see cref="PaymentHistory.EntityType"/> = Order), dùng khi replay idempotent checkout.
+    /// </summary>
+    Task<PaymentHistory?> GetPaymentHistoryByEntityIdAsync(Guid orderId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Tra cứu danh sách đơn có phân trang, lọc theo chuỗi con của mã/tên đơn (map OpenAPI <c>name</c> → <see cref="Order.Code"/>).
     /// </summary>
     /// <param name="nameFragment">Chuỗi lọc; <see langword="null"/> hoặc rỗng thì không lọc theo tên.</param>

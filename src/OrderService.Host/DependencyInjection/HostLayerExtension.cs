@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -14,6 +15,8 @@ using OrderService.Host.Filters;
 using OrderService.Host.Models;
 using OrderService.Host.Security;
 using OrderService.Infrastructure.DependencyInjection;
+using OrderService.Infrastructure.Services;
+using OrderService.Host.Workers;
 using OrderService.Host.Mapping;
 using OrderService.Host.Swagger;
 
@@ -26,6 +29,16 @@ public static class HostLayerExtension
         builder.AddApplicationLayer();
         builder.AddInfrastructureLayer();
 
+        builder.Services.AddHostedService<PublisherWorker>();
+        builder.Services.AddHostedService<PaymentWorker>();
+        builder.Services.AddHostedService<InvoiceWorker>();
+        builder.Services.AddHostedService<NotificationWorker>();
+        builder.Services.AddHostedService<ProductionWorker>();
+
+        builder.Services.AddSingleton<IPaymentGatewayClient, SimulatedPaymentGatewayClient>();
+        builder.Services.AddSingleton<IInvoiceSystemClient, SimulatedInvoiceSystemClient>();
+        builder.Services.AddSingleton<IEmailSystemClient, SimulatedEmailSystemClient>();
+        builder.Services.AddSingleton<IProductionSystemClient, SimulatedProductionSystemClient>();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<IUserContext, HttpUserContext>();
         builder.Services.AddSingleton<JwtTokenIssuer>();

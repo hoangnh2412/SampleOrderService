@@ -99,9 +99,9 @@ flowchart LR
 
 #### Level 3: Component
 
-`OrderService` gồm 2 thành phần chính: API và Relay
+`OrderService` gồm 2 thành phần chính: API và Pubisher
 - **API**: Tiếp nhận yêu cầu từ end user, giao tiếp với database để thực hiện tra cứu, khởi tạo, thanh toán đơn hàng
-- **Relay**: Sử dụng outbox pattern để đảm bảo các nghiệp vụ thanh toán, thông báo, sản xuất tiếp nhận và xử lý dc yêu cầu
+- **Pubisher**: Sử dụng outbox pattern để đảm bảo các nghiệp vụ thanh toán, thông báo, sản xuất tiếp nhận và xử lý dc yêu cầu
 
 ##### 1. OrderAPI
 
@@ -152,12 +152,12 @@ flowchart LR
 - **Database**: Lưu trữ đơn hàng và message
 - **MessageBroker**: Lưu trữ event
 
-##### 2. OrderRelay
+##### 2. OrderPubisher
 
 ```mermaid
 flowchart LR
     subgraph "Application"
-        Relay[Relay Worker]
+        Pubisher[Pubisher Worker]
         NotificationService[Notification Worker<br>Gửi email]
         PaymentService[Payment Worker<br>Thanh toán]
         InvoiceService[Invoice Worker<br>Xuất hoá đơn]
@@ -174,9 +174,9 @@ flowchart LR
         Production[Production System<br>Nội bộ]
     end
 
-    Relay -->|TCP/IP| Database
-    Relay -->|TCP/IP| Caching
-    Relay -->|TCP/IP| MessageBroker
+    Pubisher -->|TCP/IP| Database
+    Pubisher -->|TCP/IP| Caching
+    Pubisher -->|TCP/IP| MessageBroker
     MessageBroker -->|Yêu cầu xuất hoá đơn| InvoiceService
     MessageBroker -->|Yêu cầu thanh toán| PaymentService
     MessageBroker -->|Yêu cầu thực hiện| ProductionService
@@ -187,8 +187,8 @@ flowchart LR
     NotificationService -->|HTTPS| Notification
 ```
 
-`OrderRelay` áp dụng `Outbox message pattern` với các thành phần
-- **Relay worker**: Định kỳ scan bảng OrderOutboxMessage, lọc ra các message chưa xử lý để gửi lại vào message broker
+`OrderPubisher` áp dụng `Outbox message pattern` với các thành phần
+- **Pubisher worker**: Định kỳ scan bảng OrderOutboxMessage, lọc ra các message chưa xử lý để gửi lại vào message broker
 - **Payment worker**: Nhận event OrderProcessPayment và call API Payment Gateway để thực hiện thanh toán
 - **Invoice worker**: Nhận event OrderPaid và call API Invoice Service để thực hiện xuất hoá đơn
 - **Notification worker**: Nhận event OrderPaid và call API EmailServer để gửi thông báo
@@ -285,7 +285,7 @@ erDiagram
 - Partition bảng event và clean định kỳ
 - API ko nhận dc kết quả ngay, cần polling (BE hoặc FE) để update trạng thái hoặc dùng SSE
 - MessageId chỉ lưu trong Cache 7 ngày gần nhất, cần retry trước khi message bị xoá, tránh trùng lặp dữ liệu
-- Redlock để triển khai nhiều instance relay
+- Redlock để triển khai nhiều instance Pubisher
 - Có thể mở rộng bài toán như thanh toán nhiều lần, mỗi lần có hoá đơn riêng và lưu lại lịch sử từng lần thanh toán
 
 ## 4. Options considered

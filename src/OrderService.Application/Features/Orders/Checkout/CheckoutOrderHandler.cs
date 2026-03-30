@@ -9,9 +9,10 @@ using OrderService.Domain.Repositories;
 namespace OrderService.Application.Features.Orders.Checkout;
 
 public sealed class CheckoutOrderHandler(
-    IOrderRepository orders,
+    IOrderRepository orderRepo,
     TimeProvider time,
-    IUserContext user)
+    IUserContext user,
+    IPaymentGatewayClient paymentGateway)
     : ICommandHandler<CheckoutOrderCommand, CheckoutResultDto>
 {
     public async Task<CheckoutResultDto> HandleAsync(CheckoutOrderCommand command, CancellationToken cancellationToken = default)
@@ -24,7 +25,7 @@ public sealed class CheckoutOrderHandler(
 
         var utc = time.GetUtcNow().UtcDateTime;
 
-        var order = await orders.LoadByIdAsync(command.OrderId, cancellationToken)
+        var order = await orderRepo.LoadByIdAsync(command.OrderId, cancellationToken)
             ?? throw new ApiNotFoundException(ErrorCodes.OrderNotFound, "Order not found.");
 
         if (order.PaymentStatus == PaymentStatus.Paid)
@@ -32,45 +33,52 @@ public sealed class CheckoutOrderHandler(
             if (string.IsNullOrWhiteSpace(command.IdempotentId))
                 throw new ApiConflictException(ErrorCodes.OrderAlreadyPaid, "Order has already been paid.");
 
-            return MapCheckout(order, user, paymentTransactionId: null);
+            var paymentHistory = await orderRepo.GetPaymentHistoryByEntityIdAsync(order.Id, cancellationToken)
+                ?? throw new ApiNotFoundException(ErrorCodes.PaymentHistoryNotFound, "Payment history not found.");
+
+            return new CheckoutResultDto
+            {
+                OrderId = order.Id,
+                Status = order.Status.ToString(),
+                PaymentTransactionId = paymentHistory.TransactionId,
+                PaymentAt = order.PaymentAt,
+                PaymentBy = user.Id.ToString(),
+                PaymentByName = paymentHistory.CreatedByName!
+            };
         }
 
-        order.CompleteCheckout(user.Id, user.FullName ?? user.UserName, utc);
-
-        var transactionId = $"txn_{Guid.NewGuid():N}";
-        var history = PaymentHistory.CreateForOrder(
-            order.Id,
-            order.TotalPaymentAmount,
-            transactionId,
-            utc,
-            user.Id,
-            user.FullName ?? user.UserName);
-
-        await orders.SaveAsync(order, cancellationToken);
-        await orders.AddPaymentHistoryAsync(history, cancellationToken);
-
-        var refreshed = await orders.GetByIdWithDetailsReadOnlyAsync(order.Id, cancellationToken) ?? order;
-        return MapCheckout(refreshed, user, transactionId);
-    }
-
-    private static CheckoutResultDto MapCheckout(Order o, IUserContext user, string? paymentTransactionId)
-    {
-        string payerDisplay;
-        if (!string.IsNullOrEmpty(o.PaymentByName))
-            payerDisplay = o.PaymentByName;
-        else if (!string.IsNullOrEmpty(user.FullName))
-            payerDisplay = user.FullName;
-        else
-            payerDisplay = user.UserName;
+        await paymentGateway.PrePaymentAsync(order.Id, cancellationToken);
+        order.ProcessPayment();
+        await orderRepo.SaveAsync(order, cancellationToken);
 
         return new CheckoutResultDto
         {
-            OrderId = o.Id,
-            Status = o.Status.ToString(),
-            PaymentTransactionId = paymentTransactionId,
-            PaymentAt = o.PaymentAt,
-            PaymentBy = user.UserName,
-            PaymentByName = payerDisplay
+            OrderId = order.Id,
+            Status = order.Status.ToString(),
         };
+        // order.CompletePayment(user.Id, user.FullName ?? user.UserName, utc);
+
+        // var transactionId = $"txn_{Guid.NewGuid():N}";
+        // var history = PaymentHistory.Create(
+        //     order.Id,
+        //     order.TotalPaymentAmount,
+        //     transactionId,
+        //     utc,
+        //     user.Id,
+        //     user.FullName ?? user.UserName);
+
+        // await orderRepo.SaveAsync(order, cancellationToken);
+        // await orderRepo.AddPaymentHistoryAsync(history, cancellationToken);
+
+        // var refreshed = await orderRepo.GetByIdWithDetailsReadOnlyAsync(order.Id, cancellationToken) ?? order;
+        // return new CheckoutResultDto
+        // {
+        //     OrderId = refreshed.Id,
+        //     Status = refreshed.Status.ToString(),
+        //     PaymentTransactionId = transactionId,
+        //     PaymentAt = refreshed.PaymentAt,
+        //     PaymentBy = user.Id.ToString(),
+        //     PaymentByName = refreshed.PaymentByName!
+        // };
     }
 }

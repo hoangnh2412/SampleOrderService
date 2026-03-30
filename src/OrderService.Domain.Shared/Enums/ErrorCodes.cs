@@ -21,6 +21,9 @@ public enum ErrorCodes
     /// <summary>4040 — Không tìm thấy đơn hàng.</summary>
     OrderNotFound = 4040,
 
+    /// <summary>4041 — Đơn đã paid nhưng không có lịch sử thanh toán (dữ liệu không nhất quán).</summary>
+    PaymentHistoryNotFound = 4041,
+
     /// <summary>4090 — Đơn đã thanh toán (checkout trùng không idempotent).</summary>
     OrderAlreadyPaid = 4090,
 

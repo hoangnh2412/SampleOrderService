@@ -5,7 +5,7 @@ namespace OrderService.Domain.Entities;
 /// <summary>
 /// Aggregate root cơ sở: tích lũy domain events cho tới khi persist xong rồi <see cref="ClearDomainEvents"/>.
 /// </summary>
-public abstract class BaseAggregateRoot
+public abstract class BaseAggregateRoot : IAggregateRoot
 {
     private readonly List<IDomainEvent> _domainEvents = [];
 

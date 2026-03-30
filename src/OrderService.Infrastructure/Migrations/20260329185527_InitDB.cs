@@ -12,21 +12,6 @@ namespace OrderService.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "OrderMessages",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    EntityId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Payload = table.Column<string>(type: "TEXT", maxLength: 8000, nullable: false),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OrderMessages", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
@@ -49,6 +34,21 @@ namespace OrderService.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Orders", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OutboxMessages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    EntityId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Payload = table.Column<string>(type: "TEXT", nullable: false),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OutboxMessages", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -100,16 +100,21 @@ namespace OrderService.Infrastructure.Migrations
                 column: "OrderId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrderMessages_EntityId_Status",
-                table: "OrderMessages",
-                columns: new[] { "EntityId", "Status" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Orders_IdempotentId",
                 table: "Orders",
                 column: "IdempotentId",
                 unique: true,
                 filter: "IdempotentId <> ''");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OutboxMessages_CreatedAtUtc",
+                table: "OutboxMessages",
+                column: "CreatedAtUtc");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OutboxMessages_EntityId_Status",
+                table: "OutboxMessages",
+                columns: new[] { "EntityId", "Status" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_PaymentHistories_EntityId_EntityType",
@@ -124,7 +129,7 @@ namespace OrderService.Infrastructure.Migrations
                 name: "OrderDetails");
 
             migrationBuilder.DropTable(
-                name: "OrderMessages");
+                name: "OutboxMessages");
 
             migrationBuilder.DropTable(
                 name: "PaymentHistories");

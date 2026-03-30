@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Domain.Entities;
 using OrderService.Domain.Repositories;
+using OrderService.Domain.Shared.Enums;
 
 namespace OrderService.Infrastructure.Persistence.Repositories;
 
@@ -31,7 +32,7 @@ public sealed class OrderRepository(OrderDbContext db) : IOrderRepository
             db.ChangeTracker.Clear();
             var winner = await db.Orders.AsNoTracking()
                 .Include(o => o.Details)
-                .FirstOrDefaultAsync(o => o.IdempotentId == order.IdempotentId, cancellationToken);
+                .FirstOrDefaultAsync(o => o.IdempotentId == order.IdempotentId.Trim(), cancellationToken);
             if (winner is not null)
             {
                 order.ClearDomainEvents();
@@ -41,7 +42,6 @@ public sealed class OrderRepository(OrderDbContext db) : IOrderRepository
             throw;
         }
 
-        order.ClearDomainEvents();
         return order;
     }
 
@@ -63,13 +63,20 @@ public sealed class OrderRepository(OrderDbContext db) : IOrderRepository
     public async Task SaveAsync(Order order, CancellationToken cancellationToken = default)
     {
         await db.SaveChangesAsync(cancellationToken);
-        order.ClearDomainEvents();
     }
 
     public async Task AddPaymentHistoryAsync(PaymentHistory history, CancellationToken cancellationToken = default)
     {
         await db.PaymentHistories.AddAsync(history, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<PaymentHistory?> GetPaymentHistoryByEntityIdAsync(Guid orderId, CancellationToken cancellationToken = default)
+    {
+        return await db.PaymentHistories.AsNoTracking()
+            .Where(h => h.EntityId == orderId && h.EntityType == PaymentHistoryEntityType.Order)
+            .OrderByDescending(h => h.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<(IReadOnlyList<Order> Items, int TotalCount)> SearchPagedAsync(

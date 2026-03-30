@@ -44,7 +44,7 @@ public sealed class Order : BaseAggregateRoot
     /// <summary>
     /// Factory đơn mới kèm dòng chi tiết. Tổng tiền phải khớp dòng (kiểm tra ở Application trước khi gọi).
     /// </summary>
-    public static Order Create(
+    public Order(
         DateTime createdAtUtc,
         DateTime orderDate,
         decimal totalAmount,
@@ -91,21 +91,29 @@ public sealed class Order : BaseAggregateRoot
             d.DiscountAmount,
             d.PaymentAmount)).ToList();
 
-        order.AddDomainEvent(new OrderCreated(
+        AddDomainEvent(new OrderCreated(
             order.Id,
             order.Code,
             OrderStatus.Draft,
             PaymentStatus.Unpaid,
             createdAtUtc,
-            createdAtUtc,
             items));
-        return order;
+    }
+
+    public void ProcessPayment()
+    {
+        if (PaymentStatus == PaymentStatus.Paid)
+            throw new InvalidOperationException("Order is already paid.");
+
+        PaymentStatus = PaymentStatus.Pending;
+
+        AddDomainEvent(new OrderPaymentProcessing(Id, CreatedAtUtc));
     }
 
     /// <summary>
     /// Xác nhận thanh toán đồng bộ (mẫu theo OpenAPI checkout 200).
     /// </summary>
-    public void CompleteCheckout(
+    public void CompletePayment(
         Guid paymentBy,
         string paymentByName,
         DateTime paymentAtUtc)

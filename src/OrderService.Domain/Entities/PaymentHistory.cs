@@ -20,28 +20,24 @@ public sealed class PaymentHistory
     {
     }
 
-    public static PaymentHistory CreateForOrder(
-        Guid orderId,
+    public static PaymentHistory Create(
+        Guid entityId,
         decimal amount,
         string transactionId,
         DateTime createdAtUtc,
-        Guid? createdBy,
-        string? createdByName)
+        Guid createdBy,
+        string createdByName)
     {
-        string? normalizedCreatedByName = null;
-        if (!string.IsNullOrWhiteSpace(createdByName))
-            normalizedCreatedByName = createdByName.Trim();
-
         return new PaymentHistory
         {
             Id = Guid.NewGuid(),
-            EntityId = orderId,
+            EntityId = entityId,
             EntityType = PaymentHistoryEntityType.Order,
             Amount = amount,
             TransactionId = transactionId,
             CreatedAtUtc = createdAtUtc,
             CreatedBy = createdBy,
-            CreatedByName = normalizedCreatedByName
+            CreatedByName = createdByName.Trim()
         };
     }
 }

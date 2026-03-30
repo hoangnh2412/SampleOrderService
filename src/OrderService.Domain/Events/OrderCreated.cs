@@ -16,10 +16,9 @@ public sealed record OrderCreatedLineItem(
     decimal PaymentAmount);
 
 public sealed record OrderCreated(
-    Guid OrderId,
+    Guid EntityId,
     string Code,
     OrderStatus Status,
     PaymentStatus PaymentStatus,
     DateTime CreatedAtUtc,
-    DateTime OccurredAtUtc,
     IReadOnlyList<OrderCreatedLineItem> Items) : IDomainEvent;
