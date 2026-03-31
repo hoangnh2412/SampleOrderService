@@ -3,7 +3,6 @@ using OrderService.Application.Commands.Orders;
 using OrderService.Application.Dtos.Orders;
 using OrderService.Application.Exceptions;
 using OrderService.Application.Interfaces;
-using OrderService.Domain.Entities;
 using OrderService.Domain.Repositories;
 
 namespace OrderService.Application.Features.Orders.Checkout;
@@ -56,29 +55,5 @@ public sealed class CheckoutOrderHandler(
             OrderId = order.Id,
             Status = order.Status.ToString(),
         };
-        // order.CompletePayment(user.Id, user.FullName ?? user.UserName, utc);
-
-        // var transactionId = $"txn_{Guid.NewGuid():N}";
-        // var history = PaymentHistory.Create(
-        //     order.Id,
-        //     order.TotalPaymentAmount,
-        //     transactionId,
-        //     utc,
-        //     user.Id,
-        //     user.FullName ?? user.UserName);
-
-        // await orderRepo.SaveAsync(order, cancellationToken);
-        // await orderRepo.AddPaymentHistoryAsync(history, cancellationToken);
-
-        // var refreshed = await orderRepo.GetByIdWithDetailsReadOnlyAsync(order.Id, cancellationToken) ?? order;
-        // return new CheckoutResultDto
-        // {
-        //     OrderId = refreshed.Id,
-        //     Status = refreshed.Status.ToString(),
-        //     PaymentTransactionId = transactionId,
-        //     PaymentAt = refreshed.PaymentAt,
-        //     PaymentBy = user.Id.ToString(),
-        //     PaymentByName = refreshed.PaymentByName!
-        // };
     }
 }

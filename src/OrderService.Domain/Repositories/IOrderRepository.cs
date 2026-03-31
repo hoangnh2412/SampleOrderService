@@ -61,6 +61,13 @@ public interface IOrderRepository
     Task<PaymentHistory?> GetPaymentHistoryByEntityIdAsync(Guid orderId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Tra cứu lịch sử thanh toán theo mã giao dịch cổng (idempotency webhook).
+    /// </summary>
+    Task<PaymentHistory?> GetPaymentHistoryByTransactionIdAsync(
+        string transactionId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Tra cứu danh sách đơn có phân trang, lọc theo chuỗi con của mã/tên đơn (map OpenAPI <c>name</c> → <see cref="Order.Code"/>).
     /// </summary>
     /// <param name="nameFragment">Chuỗi lọc; <see langword="null"/> hoặc rỗng thì không lọc theo tên.</param>

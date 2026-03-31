@@ -275,7 +275,7 @@ erDiagram
 - Thiết kế bảng outbox message tổng quát
 - Cơ chế retry tự động
 - Cơ chế retry thủ công
-- Bảo mật từ API
+- Limit API checkout
 - Bổ sung các log, trace, metric để monitor, alert
 - Retry khi call API các bên thứ 3
 - Nếu retry ko thành công, gửi alert vận hành

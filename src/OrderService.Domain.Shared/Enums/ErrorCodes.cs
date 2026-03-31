@@ -27,8 +27,14 @@ public enum ErrorCodes
     /// <summary>4090 — Đơn đã thanh toán (checkout trùng không idempotent).</summary>
     OrderAlreadyPaid = 4090,
 
+    /// <summary>4091 — Webhook thanh toán với mã giao dịch khác khi đơn đã paid.</summary>
+    PaymentWebhookTransactionMismatch = 4091,
+
     /// <summary>4220 — Vi phạm nghiệp vụ / tổng tiền không khớp dòng.</summary>
     OrderTotalsMismatch = 4220,
+
+    /// <summary>4221 — Đơn không ở trạng thái chờ thanh toán (webhook không áp dụng).</summary>
+    OrderPaymentNotPending = 4221,
 
     /// <summary>5000 — Lỗi máy chủ không lường trước.</summary>
     InternalServerError = 5000

@@ -2,12 +2,11 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using OrderService.Application.Abstractions;
+using OrderService.Application.Configuration;
 using OrderService.Application.DependencyInjection;
 using OrderService.Domain.Shared.Enums;
 using OrderService.Domain.Shared.Extensions;
@@ -26,6 +25,8 @@ public static class HostLayerExtension
 {
     public static WebApplicationBuilder AddHostLayer(this WebApplicationBuilder builder)
     {
+        builder.Services.Configure<PaymentWebhookOptions>(builder.Configuration.GetSection(PaymentWebhookOptions.SectionName));
+
         builder.AddApplicationLayer();
         builder.AddInfrastructureLayer();
 

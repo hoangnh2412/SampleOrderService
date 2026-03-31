@@ -6,6 +6,7 @@ using OrderService.Application.Mapping;
 using OrderService.Application.Features.Orders.Checkout;
 using OrderService.Application.Features.Orders.CreateOrder;
 using OrderService.Application.Features.Orders.SearchOrders;
+using OrderService.Application.Features.Webhooks;
 using OrderService.Application.Interfaces;
 using OrderService.Application.Queries.Orders;
 using OrderService.Application.ReadModels;
@@ -21,6 +22,7 @@ public static class ApplicationLayerExtension
         builder.Services.AddAutoMapper(typeof(OrderDomainMappingProfile).Assembly);
         builder.Services.AddScoped<ICommandHandler<CreateOrderCommand, CreateOrderResultDto>, CreateOrderHandler>();
         builder.Services.AddScoped<ICommandHandler<CheckoutOrderCommand, CheckoutResultDto>, CheckoutOrderHandler>();
+        builder.Services.AddScoped<ICommandHandler<PaymentWebhookCommand, CheckoutResultDto>, PaymentWebhookHandler>();
         builder.Services.AddScoped<IQueryHandler<SearchOrdersPagedQuery, PagedOrdersReadModel>, SearchOrdersPagedHandler>();
         builder.Services.AddScoped<BrokerPublisher>();
 

@@ -17,12 +17,12 @@ public sealed class RoutedInMemoryMessageBroker(WorkerMessageHub hub, ILogger<Ro
         switch (eventType)
         {
             case nameof(OrderPaymentProcessing):
-                await hub.Payment.Writer.WriteAsync(message, cancellationToken).ConfigureAwait(false);
+                await hub.Payment.Writer.WriteAsync(message, cancellationToken);
                 return;
             case nameof(OrderPaid):
-                await hub.Invoice.Writer.WriteAsync(message, cancellationToken).ConfigureAwait(false);
-                await hub.Notification.Writer.WriteAsync(message, cancellationToken).ConfigureAwait(false);
-                await hub.Production.Writer.WriteAsync(message, cancellationToken).ConfigureAwait(false);
+                await hub.Invoice.Writer.WriteAsync(message, cancellationToken);
+                await hub.Notification.Writer.WriteAsync(message, cancellationToken);
+                await hub.Production.Writer.WriteAsync(message, cancellationToken);
                 return;
             default:
                 if (eventType is not null)

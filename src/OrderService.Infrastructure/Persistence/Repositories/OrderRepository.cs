@@ -79,6 +79,20 @@ public sealed class OrderRepository(OrderDbContext db) : IOrderRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<PaymentHistory?> GetPaymentHistoryByTransactionIdAsync(
+        string transactionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(transactionId))
+            return null;
+
+        var key = transactionId.Trim();
+        return await db.PaymentHistories.AsNoTracking()
+            .Where(h => h.TransactionId == key && h.EntityType == PaymentHistoryEntityType.Order)
+            .OrderByDescending(h => h.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<Order> Items, int TotalCount)> SearchPagedAsync(
         string? nameFragment,
         int page,

@@ -58,30 +58,27 @@ public sealed class Order : BaseAggregateRoot
         if (lineSpecs.Count == 0)
             throw new ArgumentException("At least one line item is required.", nameof(lineSpecs));
 
-        var order = new Order
-        {
-            Id = Guid.NewGuid(),
-            IdempotentId = idempotentId.Trim(),
-            Code = StringExtension.NewOrderCode(orderDate),
-            OrderDate = orderDate,
-            TotalAmount = totalAmount,
-            TotalDiscountAmount = totalDiscountAmount,
-            TotalPaymentAmount = totalPaymentAmount,
-            Status = OrderStatus.Draft,
-            PaymentStatus = PaymentStatus.Unpaid,
-            CreatedAtUtc = createdAtUtc,
-            CreatedBy = createdBy,
-            CreatedByName = createdByName.Trim(),
-            PaymentAt = null,
-            PaymentBy = null,
-            PaymentByName = null,
-            Details = []
-        };
+        Id = Guid.NewGuid();
+        IdempotentId = idempotentId.Trim();
+        Code = StringExtension.NewOrderCode(orderDate);
+        OrderDate = orderDate;
+        TotalAmount = totalAmount;
+        TotalDiscountAmount = totalDiscountAmount;
+        TotalPaymentAmount = totalPaymentAmount;
+        Status = OrderStatus.Draft;
+        PaymentStatus = PaymentStatus.Unpaid;
+        CreatedAtUtc = createdAtUtc;
+        CreatedBy = createdBy;
+        CreatedByName = createdByName.Trim();
+        PaymentAt = null;
+        PaymentBy = null;
+        PaymentByName = null;
+        Details = [];
 
         foreach (var item in lineSpecs)
-            order.Details.Add(OrderDetail.Create(order.Id, item));
+            Details.Add(OrderDetail.Create(Id, item));
 
-        var items = order.Details.Select(d => new OrderCreatedLineItem(
+        var items = Details.Select(d => new OrderCreatedLineItem(
             d.Id,
             d.ProductId,
             d.ProductName,
@@ -92,8 +89,8 @@ public sealed class Order : BaseAggregateRoot
             d.PaymentAmount)).ToList();
 
         AddDomainEvent(new OrderCreated(
-            order.Id,
-            order.Code,
+            Id,
+            Code,
             OrderStatus.Draft,
             PaymentStatus.Unpaid,
             createdAtUtc,
@@ -133,5 +130,19 @@ public sealed class Order : BaseAggregateRoot
         PaymentBy = paymentBy;
 
         AddDomainEvent(new OrderPaid(Id, paymentAtUtc));
+    }
+
+    /// <summary>
+    /// Cổng thanh toán báo thất bại (webhook) khi đơn đang chờ thanh toán.
+    /// </summary>
+    public void ApplyPaymentFailed()
+    {
+        if (PaymentStatus == PaymentStatus.Paid)
+            throw new InvalidOperationException("Order is already paid.");
+
+        if (PaymentStatus != PaymentStatus.Pending)
+            throw new InvalidOperationException("Payment is not in pending state.");
+
+        PaymentStatus = PaymentStatus.Failed;
     }
 }
