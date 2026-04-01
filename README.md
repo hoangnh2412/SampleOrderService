@@ -1,8 +1,6 @@
 # OrderService
 
-Dự án mẫu **dịch vụ đơn hàng** (.NET): khách tạo đơn, tra cứu theo tên, checkout thanh toán; sau khi thanh toán thành công, hệ thống phối hợp xuất hóa đơn, đẩy đơn sang Production nội bộ và gửi email thông báo.
-
-Luồng xử lý tích hợp dùng **outbox / message broker** (demo dùng broker in-memory) để tách phần đồng bộ HTTP và phần hậu xử lý bất đồng bộ.
+Dự án mẫu OrderService (.NET) với nghiệp vụ cơ bản: Khách tạo đơn, tra cứu theo tên, checkout thanh toán; sau khi thanh toán thành công, hệ thống phối hợp xuất hóa đơn, đẩy đơn sang Production nội bộ và gửi email thông báo.
 
 ## Tài liệu
 
@@ -10,12 +8,10 @@ Luồng xử lý tích hợp dùng **outbox / message broker** (demo dùng broke
 
 ## Công nghệ (tóm tắt)
 
-Backend hướng tới **ASP.NET Core**, **Entity Framework**, SQLite; cache và message broker in-memory cho môi trường demo; frontend tham chiếu **React**. Chi tiết stack và sơ đồ nằm trong SAD.
+1. ASP.NET Core
+2. Entity Framework
+3. SQLite
+4. Cache inmemory
+5. message broker in-memory
+6. JWT
 
-## Repo
-
-| Đường dẫn | Nội dung |
-|-----------|----------|
-| `docs/sad.md` | Kiến trúc & thiết kế |
-| `OrderService.sln` | Solution Visual Studio |
-| `skills/architechture-dotnet.md` | Ghi chú / skill kiến trúc .NET (nếu dùng nội bộ) |
