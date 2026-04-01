@@ -5,12 +5,6 @@
 Khách hàng cần thực hiện thanh toán đơn hàng đã được tạo trước để đẩy đơn hàng đó sang hệ thống Production.
 Khi một đơn hàng được checkout thành công, hệ thống cần gửi email cho khách hàng để thông báo rằng việc này đã thành công. Đồng thời, tạo một hóa đơn trong hệ thống hóa đơn; sau đó, cần gọi hệ thống Production nội bộ (Production service) để đẩy đơn hàng này vào xử lý trong hệ thống nội bộ.
 
-Ví dụ:
-1. Khách hàng tạo đơn hàng
-1. Khách hàng truy cập vào hệ thống và tìm kiếm các đơn hàng mà họ đã tạo trước đó theo tên đơn hàng
-1. Khách hàng thực hiện checkout đơn hàng và nếu thanh toán thành công, đơn hàng đó sẽ được đẩy sang hệ thống Production
-1. Hệ thống tự động gửi mail thông báo thanh toán thành công
-
 Giả định:
 1. Bài toán là dạng bán dịch vụ, nên ko yêu cầu kiểm tra tồn kho khi tạo đơn hàng
 1. Hệ thống có ~500k đơn hàng trong database của 1k khách hàng
@@ -22,10 +16,6 @@ Yêu cầu chức năng:
 1. Đơn hàng có thể được tìm kiếm/lọc theo tên
 1. Nếu đơn hàng được checkout thành công, cần gọi hệ thống nội bộ (Production system) để cập nhật trạng thái của đơn hàng trong hệ thống nội bộ
 1. Khách hàng phải nhận được email nếu thanh toán thành công
-
-Yêu cầu phi chức năng:
-1. Tra cứu đơn hàng dưới 5s
-1. Thời gian chờ thanh toán ko quá 20s (ko bao gồm thời gian xử lý thanh toán từ bên thứ 3)
 1. Khách hàng sau khi checkout thành công sẽ nhận dc mail thông báo dưới 1 phút (ko bao gồm thời gian gửi mail)
 
 ## 2. Decision
