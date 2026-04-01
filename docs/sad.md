@@ -40,9 +40,9 @@ Yêu cầu phi chức năng:
 - **API Gateway**: Ko sử dụng, để đơn giản hoá khi làm demo
 
 ### 2.2. Kiến trúc
-- **Microservices**: 
-- **Clean Architecture**: 
-- **Domain Driven Design**: 
+- **Microservices**: Chia service làm 2 thành phần API và worker publisher có thể triển khai, scale riêng; giao tiếp với Payment Gateway, Invoice, email và Production qua API, phù hợp scale từng thành phần khi tải tăng hoặc bài toán mở rộng.
+- **Clean Architecture**: Tuân thủ các nguyên tắc giảm sự phụ thuộc. Phân tầng Host (presentation), Application (use case / CQRS handlers), Domain (entity, rule), Infrastructure (EF, message broker, cache) với luồng phụ thuộc hướng vào trong: Application và Domain không phụ thuộc chi tiết triển khai framework hay DB.
+- **Domain Driven Design**: Thiết kế Order chứa toàn bộ nghiệp vụ của service, Order là aggregate root xử lý nghiệp vụ, lưu trữ event cho publisher gửi đến broker.
 
 ### 2.3. C4
 
@@ -305,9 +305,6 @@ API tiếp nhận yêu cầu thanh toán, thực hiện tuần tự: Truy vấn 
 
 ## 5. Tracking time
 1. Phân tích: 0.5h
-2. Thiết kế kiến trúc: 08:30 - 12:30 => 4h
-3. Thiết kế API: 16:00 - 17:30 => 1.5h
-4. Code (vibe code): 17:30
-4. Unit test: 
-5. System test: 
-6. Performance test: 
+2. Thiết kế kiến trúc: 4h
+3. Thiết kế API: 1.5h
+4. Code (vibe code): 10h
